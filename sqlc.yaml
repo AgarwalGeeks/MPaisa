@@ -1,0 +1,12 @@
+version: "1"
+packages:
+  - name: "db"  # Go package name
+    path: "./db/sqlc"  # path to generated code
+    queries: "./db/query"  # path to SQL queries
+    schema: "./db/migration"  # path to SQL schema files
+    engine: "postgresql"  # database engine
+    emit_json_tags: true
+    emit_prepared_queries: false
+    emit_interface: false
+    emit_exact_table_names: true
+
