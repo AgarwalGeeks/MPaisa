@@ -44,7 +44,6 @@ jobs:
                 which migrate
 
         -   name: Run migrations
-            run: migrate -path db/migration -database "postgresql://haagarwa:Harshit%4012345@localhost:5435/MPaisa?sslmode=disable" -verbose up
-
+            run: make migrateupinit
         -   name: Run tests
             run: make test
