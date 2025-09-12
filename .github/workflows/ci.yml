@@ -11,6 +11,20 @@ jobs:
     test:
         name: Test
         runs-on: ubuntu-latest
+
+        services:
+            postgres:
+                image: postgres:latest
+                env:
+                    POSTGRES_PASSWORD: Harshit@12345
+                    POSTGRES_USER: haagarwa
+                    POSTGRES_DB: MPaisa
+                options: >-
+                    --health-cmd pg_isready
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+
         steps:
 
         -   name: Set up Go
