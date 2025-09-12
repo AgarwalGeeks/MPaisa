@@ -19,6 +19,8 @@ jobs:
                     POSTGRES_PASSWORD: Harshit@12345
                     POSTGRES_USER: haagarwa
                     POSTGRES_DB: MPaisa
+                ports: 
+                -   5435:5432
                 options: >-
                     --health-cmd pg_isready
                     --health-interval 10s
