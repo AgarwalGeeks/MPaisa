@@ -1,4 +1,4 @@
-.PHONY: createdb dropdb sqlc
+.PHONY: createdb dropdb sqlc test
 
 createdb: 
 	docker exec -it postgres_server createdb --username=haagarwa --owner=haagarwa MPaisa
@@ -17,3 +17,6 @@ migratedowninit:
 
 sqlc:
 	sqlc generate
+
+test:
+	go test -v -cover ./...
