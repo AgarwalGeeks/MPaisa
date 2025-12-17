@@ -10,13 +10,15 @@ import (
 )
 
 type FinanceCreditCard struct {
-	BankName   string         `json:"bank_name"`
-	CardName   string         `json:"card_name"`
-	CardNumber string         `json:"card_number"`
-	Cvv        string         `json:"cvv"`
-	Pin        string         `json:"pin"`
-	Usage      sql.NullString `json:"usage"`
-	UserID     int32          `json:"user_id"`
+	ID          int32          `json:"id"`
+	BankName    string         `json:"bank_name"`
+	CardName    string         `json:"card_name"`
+	CardNumber  string         `json:"card_number"`
+	Cvv         int32          `json:"cvv"`
+	Pin         int32          `json:"pin"`
+	ExpiaryDate time.Time      `json:"expiary_date"`
+	Usage       sql.NullString `json:"usage"`
+	UserID      int32          `json:"user_id"`
 }
 
 type FinanceSalarySplitItems struct {

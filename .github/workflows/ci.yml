@@ -45,5 +45,6 @@ jobs:
 
         -   name: Run migrations
             run: make migrateupinit
+            
         -   name: Run tests
             run: make test

@@ -1,11 +1,13 @@
 CREATE SCHEMA IF NOT EXISTS "Finance";
 
 CREATE TABLE "Finance"."Credit_Card" (
+    "id" SERIAL PRIMARY KEY,
     "bank_name" VARCHAR(20) NOT NULL,
     "card_name" VARCHAR(50) NOT NULL,
     "card_number" VARCHAR(16) NOT NULL,
-    "cvv" NUMERIC(3,0) NOT NULL,
-    "pin" NUMERIC(3,0) NOT NULL,
+    "cvv" INTEGER NOT NULL,
+    "pin" INTEGER NOT NULL,
+    "expiary_date" DATE NOT NULL,
     "usage" VARCHAR(100),
     "user_id" INTEGER NOT NULL
 );

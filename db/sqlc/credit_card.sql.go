@@ -8,6 +8,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
 const addCreditCard = `-- name: AddCreditCard :one
@@ -17,22 +18,24 @@ INSERT INTO "Finance"."Credit_Card" (
     card_number,
     cvv,
     pin,
+    expiary_date,
     usage,
     user_id
 ) VALUES (
-  $1, $2, $3, $4, $5, $6, $7
+  $1, $2, $3, $4, $5, $6, $7, $8
 )
-RETURNING bank_name, card_name, card_number, cvv, pin, usage, user_id
+RETURNING id, bank_name, card_name, card_number, cvv, pin, expiary_date, usage, user_id
 `
 
 type AddCreditCardParams struct {
-	BankName   string         `json:"bank_name"`
-	CardName   string         `json:"card_name"`
-	CardNumber string         `json:"card_number"`
-	Cvv        string         `json:"cvv"`
-	Pin        string         `json:"pin"`
-	Usage      sql.NullString `json:"usage"`
-	UserID     int32          `json:"user_id"`
+	BankName    string         `json:"bank_name"`
+	CardName    string         `json:"card_name"`
+	CardNumber  string         `json:"card_number"`
+	Cvv         int32          `json:"cvv"`
+	Pin         int32          `json:"pin"`
+	ExpiaryDate time.Time      `json:"expiary_date"`
+	Usage       sql.NullString `json:"usage"`
+	UserID      int32          `json:"user_id"`
 }
 
 func (q *Queries) AddCreditCard(ctx context.Context, arg AddCreditCardParams) (FinanceCreditCard, error) {
@@ -42,39 +45,52 @@ func (q *Queries) AddCreditCard(ctx context.Context, arg AddCreditCardParams) (F
 		arg.CardNumber,
 		arg.Cvv,
 		arg.Pin,
+		arg.ExpiaryDate,
 		arg.Usage,
 		arg.UserID,
 	)
 	var i FinanceCreditCard
 	err := row.Scan(
+		&i.ID,
 		&i.BankName,
 		&i.CardName,
 		&i.CardNumber,
 		&i.Cvv,
 		&i.Pin,
+		&i.ExpiaryDate,
 		&i.Usage,
 		&i.UserID,
 	)
 	return i, err
 }
 
-const deleteCreditCardByCardNumber = `-- name: DeleteCreditCardByCardNumber :exec
+const deleteAllCreditCards = `-- name: DeleteAllCreditCards :exec
 DELETE FROM "Finance"."Credit_Card"
-WHERE card_number = $1 AND user_id = $2
+WHERE user_id = $1
 `
 
-type DeleteCreditCardByCardNumberParams struct {
-	CardNumber string `json:"card_number"`
-	UserID     int32  `json:"user_id"`
+func (q *Queries) DeleteAllCreditCards(ctx context.Context, userID int32) error {
+	_, err := q.db.ExecContext(ctx, deleteAllCreditCards, userID)
+	return err
 }
 
-func (q *Queries) DeleteCreditCardByCardNumber(ctx context.Context, arg DeleteCreditCardByCardNumberParams) error {
-	_, err := q.db.ExecContext(ctx, deleteCreditCardByCardNumber, arg.CardNumber, arg.UserID)
+const deleteCreditCard = `-- name: DeleteCreditCard :exec
+DELETE FROM "Finance"."Credit_Card"
+WHERE card_number = $2 AND user_id = $1
+`
+
+type DeleteCreditCardParams struct {
+	UserID     int32  `json:"user_id"`
+	CardNumber string `json:"card_number"`
+}
+
+func (q *Queries) DeleteCreditCard(ctx context.Context, arg DeleteCreditCardParams) error {
+	_, err := q.db.ExecContext(ctx, deleteCreditCard, arg.UserID, arg.CardNumber)
 	return err
 }
 
 const getAllCreditCards = `-- name: GetAllCreditCards :many
-SELECT bank_name, card_name, card_number, cvv, pin, usage, user_id FROM "Finance"."Credit_Card"
+SELECT id, bank_name, card_name, card_number, cvv, pin, expiary_date, usage, user_id FROM "Finance"."Credit_Card"
 WHERE user_id = $1 ORDER BY bank_name, card_name
 `
 
@@ -88,11 +104,13 @@ func (q *Queries) GetAllCreditCards(ctx context.Context, userID int32) ([]Financ
 	for rows.Next() {
 		var i FinanceCreditCard
 		if err := rows.Scan(
+			&i.ID,
 			&i.BankName,
 			&i.CardName,
 			&i.CardNumber,
 			&i.Cvv,
 			&i.Pin,
+			&i.ExpiaryDate,
 			&i.Usage,
 			&i.UserID,
 		); err != nil {
@@ -110,24 +128,26 @@ func (q *Queries) GetAllCreditCards(ctx context.Context, userID int32) ([]Financ
 }
 
 const getCreditCardByCardNumber = `-- name: GetCreditCardByCardNumber :one
-SELECT bank_name, card_name, card_number, cvv, pin, usage, user_id FROM "Finance"."Credit_Card"
-WHERE card_number = $1 AND user_id = $2
+SELECT id, bank_name, card_name, card_number, cvv, pin, expiary_date, usage, user_id FROM "Finance"."Credit_Card"
+WHERE card_number = $2 AND user_id = $1
 `
 
 type GetCreditCardByCardNumberParams struct {
-	CardNumber string `json:"card_number"`
 	UserID     int32  `json:"user_id"`
+	CardNumber string `json:"card_number"`
 }
 
 func (q *Queries) GetCreditCardByCardNumber(ctx context.Context, arg GetCreditCardByCardNumberParams) (FinanceCreditCard, error) {
-	row := q.db.QueryRowContext(ctx, getCreditCardByCardNumber, arg.CardNumber, arg.UserID)
+	row := q.db.QueryRowContext(ctx, getCreditCardByCardNumber, arg.UserID, arg.CardNumber)
 	var i FinanceCreditCard
 	err := row.Scan(
+		&i.ID,
 		&i.BankName,
 		&i.CardName,
 		&i.CardNumber,
 		&i.Cvv,
 		&i.Pin,
+		&i.ExpiaryDate,
 		&i.Usage,
 		&i.UserID,
 	)
@@ -135,79 +155,89 @@ func (q *Queries) GetCreditCardByCardNumber(ctx context.Context, arg GetCreditCa
 }
 
 const getCreditCardByUsage = `-- name: GetCreditCardByUsage :one
-SELECT bank_name, card_name, card_number, cvv, pin, usage, user_id FROM "Finance"."Credit_Card"
-WHERE usage LIKE $1 AND user_id = $2
+SELECT id, bank_name, card_name, card_number, cvv, pin, expiary_date, usage, user_id FROM "Finance"."Credit_Card"
+WHERE usage LIKE $2 AND user_id = $1
 `
 
 type GetCreditCardByUsageParams struct {
-	Usage  sql.NullString `json:"usage"`
 	UserID int32          `json:"user_id"`
+	Usage  sql.NullString `json:"usage"`
 }
 
 func (q *Queries) GetCreditCardByUsage(ctx context.Context, arg GetCreditCardByUsageParams) (FinanceCreditCard, error) {
-	row := q.db.QueryRowContext(ctx, getCreditCardByUsage, arg.Usage, arg.UserID)
+	row := q.db.QueryRowContext(ctx, getCreditCardByUsage, arg.UserID, arg.Usage)
 	var i FinanceCreditCard
 	err := row.Scan(
+		&i.ID,
 		&i.BankName,
 		&i.CardName,
 		&i.CardNumber,
 		&i.Cvv,
 		&i.Pin,
+		&i.ExpiaryDate,
 		&i.Usage,
 		&i.UserID,
 	)
 	return i, err
 }
 
-const getCreditCardsByUserId = `-- name: GetCreditCardsByUserId :many
-SELECT bank_name, card_name, card_number, cvv, pin, usage, user_id FROM "Finance"."Credit_Card"
-WHERE user_id = $1
-`
-
-func (q *Queries) GetCreditCardsByUserId(ctx context.Context, userID int32) ([]FinanceCreditCard, error) {
-	rows, err := q.db.QueryContext(ctx, getCreditCardsByUserId, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []FinanceCreditCard
-	for rows.Next() {
-		var i FinanceCreditCard
-		if err := rows.Scan(
-			&i.BankName,
-			&i.CardName,
-			&i.CardNumber,
-			&i.Cvv,
-			&i.Pin,
-			&i.Usage,
-			&i.UserID,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const updateCreditCardUsageByCardNumber = `-- name: UpdateCreditCardUsageByCardNumber :exec
+const updateCreditCardDetails = `-- name: UpdateCreditCardDetails :exec
 UPDATE "Finance"."Credit_Card"
-SET usage = $1
-WHERE card_number = $2 AND user_id = $3
+SET card_number = $3, cvv = $4, pin = $5, expiary_date = $6
+WHERE card_name = $2 AND user_id = $1
 `
 
-type UpdateCreditCardUsageByCardNumberParams struct {
-	Usage      sql.NullString `json:"usage"`
-	CardNumber string         `json:"card_number"`
-	UserID     int32          `json:"user_id"`
+type UpdateCreditCardDetailsParams struct {
+	UserID      int32     `json:"user_id"`
+	CardName    string    `json:"card_name"`
+	CardNumber  string    `json:"card_number"`
+	Cvv         int32     `json:"cvv"`
+	Pin         int32     `json:"pin"`
+	ExpiaryDate time.Time `json:"expiary_date"`
 }
 
-func (q *Queries) UpdateCreditCardUsageByCardNumber(ctx context.Context, arg UpdateCreditCardUsageByCardNumberParams) error {
-	_, err := q.db.ExecContext(ctx, updateCreditCardUsageByCardNumber, arg.Usage, arg.CardNumber, arg.UserID)
+func (q *Queries) UpdateCreditCardDetails(ctx context.Context, arg UpdateCreditCardDetailsParams) error {
+	_, err := q.db.ExecContext(ctx, updateCreditCardDetails,
+		arg.UserID,
+		arg.CardName,
+		arg.CardNumber,
+		arg.Cvv,
+		arg.Pin,
+		arg.ExpiaryDate,
+	)
+	return err
+}
+
+const updateCreditCardPin = `-- name: UpdateCreditCardPin :exec
+UPDATE "Finance"."Credit_Card"
+SET pin = $3
+WHERE user_id = $1 AND card_number = $2
+`
+
+type UpdateCreditCardPinParams struct {
+	UserID     int32  `json:"user_id"`
+	CardNumber string `json:"card_number"`
+	Pin        int32  `json:"pin"`
+}
+
+func (q *Queries) UpdateCreditCardPin(ctx context.Context, arg UpdateCreditCardPinParams) error {
+	_, err := q.db.ExecContext(ctx, updateCreditCardPin, arg.UserID, arg.CardNumber, arg.Pin)
+	return err
+}
+
+const updateCreditCardUsage = `-- name: UpdateCreditCardUsage :exec
+UPDATE "Finance"."Credit_Card"
+SET usage = $3
+WHERE card_number = $2 AND user_id = $1
+`
+
+type UpdateCreditCardUsageParams struct {
+	UserID     int32          `json:"user_id"`
+	CardNumber string         `json:"card_number"`
+	Usage      sql.NullString `json:"usage"`
+}
+
+func (q *Queries) UpdateCreditCardUsage(ctx context.Context, arg UpdateCreditCardUsageParams) error {
+	_, err := q.db.ExecContext(ctx, updateCreditCardUsage, arg.UserID, arg.CardNumber, arg.Usage)
 	return err
 }
