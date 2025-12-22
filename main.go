@@ -16,8 +16,11 @@ func initConfig() {
 	viper.SetConfigType("json") // Change to JSON
 	viper.AddConfigPath(".")
 
+	// Automatically override with environment variables if present
+	viper.AutomaticEnv()
+
 	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalf("Error reading config file, %s", err)
+		log.Printf("Error reading config file, using environment variables if available: %s", err)
 	}
 }
 
