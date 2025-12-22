@@ -8,30 +8,39 @@ import (
 	api "github.com/AgarwalGeeks/MPaisa/api"
 	db "github.com/AgarwalGeeks/MPaisa/db/sqlc"
 	_ "github.com/lib/pq"
+	"github.com/spf13/viper"
 )
 
-const (
-	dbDriver      = "postgres"
-	dbSource      = "postgresql://haagarwa:Harshit@12345@localhost:5435/MPaisa?sslmode=disable"
-	serverAddress = "0.0.0.0:8090"
-)
+func initConfig() {
+	viper.SetConfigName("config")
+	viper.SetConfigType("json") // Change to JSON
+	viper.AddConfigPath(".")
+
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalf("Error reading config file, %s", err)
+	}
+}
 
 func main() {
 	fmt.Println("Hello, World!")
 
-	// code to run before tests
+	initConfig()
+
+	dbDriver := viper.GetString("db_driver")
+	dbSource := viper.GetString("db_source")
+	serverAddress := viper.GetString("server_address")
+
 	conn, err := sql.Open(dbDriver, dbSource)
+	if err != nil {
+		log.Fatal("cannot connect to db:", err)
+	}
 
 	store := db.NewStore(conn) // Replace with your actual store initialization
 	server := api.NewServer(store)
 
 	err = server.Start(serverAddress)
 	if err != nil {
-		panic("cannot start server: " + err.Error())
-	}
-
-	if err != nil {
-		log.Fatal("cannot connect to db:", err)
+		log.Fatal("cannot start server:", err)
 	}
 
 	fmt.Println("Server is running on", serverAddress)
