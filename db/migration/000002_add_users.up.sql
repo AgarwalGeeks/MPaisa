@@ -2,7 +2,7 @@ CREATE TABLE "Finance"."users" (
     "id" CHAR(16) PRIMARY KEY,
     "email" VARCHAR(255) NOT NULL UNIQUE,
     "username" VARCHAR(255) NOT NULL UNIQUE,
-    "password" TEXT NOT NULL,
+    "user_password" TEXT NOT NULL,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

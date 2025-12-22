@@ -17,7 +17,7 @@ type addCreditCardRequest struct {
 	Pin         int32  `json:"pin" binding:"required"`
 	ExpiaryDate string `json:"expiary_date" binding:"required"` // Changed to string for easier handling
 	Usage       string `json:"usage"`                           // Optional, so no binding:"required"
-	UserID      int32  `json:"user_id" binding:"required"`
+	UserID      string `json:"user_id" binding:"required"`
 }
 
 func (server *Server) addCreditCard(ctx *gin.Context) {
@@ -61,7 +61,7 @@ func (server *Server) addCreditCard(ctx *gin.Context) {
 }
 
 type getAllCreditCardsRequest struct {
-	UserID int32 `uri:"user_id" binding:"required,min=1"`
+	UserID string `uri:"user_id" binding:"required,min=1"`
 }
 
 func (server *Server) getAllCreditCards(ctx *gin.Context) {
@@ -83,7 +83,7 @@ func (server *Server) getAllCreditCards(ctx *gin.Context) {
 type updateCreditCardRequest struct {
 	Usage      string `json:"usage"` // Changed to string
 	CardNumber string `json:"card_number"`
-	UserID     int32  `json:"user_id" binding:"required"`
+	UserID     string `json:"user_id" binding:"required"`
 }
 
 func (server *Server) updateCreditCardUsage(ctx *gin.Context) {
@@ -121,7 +121,7 @@ func (server *Server) updateCreditCardUsage(ctx *gin.Context) {
 
 type deleteCreditCardRequest struct {
 	CardNumber string `json:"card_number" binding:"required"`
-	UserID     int32  `json:"user_id" binding:"required"`
+	UserID     string `json:"user_id" binding:"required"`
 }
 
 func (server *Server) deleteCreditCard(ctx *gin.Context) {
@@ -147,7 +147,7 @@ func (server *Server) deleteCreditCard(ctx *gin.Context) {
 
 type getCreditCardByCardNumberRequest struct {
 	CardNumber string `json:"card_number" binding:"required"`
-	UserID     int32  `json:"user_id" binding:"required"`
+	UserID     string `json:"user_id" binding:"required"`
 }
 
 func (server *Server) getCreditCardByCardNumber(ctx *gin.Context) {
@@ -173,7 +173,7 @@ func (server *Server) getCreditCardByCardNumber(ctx *gin.Context) {
 
 type getCreditCardByUsageRequest struct {
 	Usage  string `json:"usage"` // Changed to string
-	UserID int32  `json:"user_id" binding:"required"`
+	UserID string `json:"user_id" binding:"required"`
 }
 
 func (server *Server) getCreditCardByUsage(ctx *gin.Context) {
@@ -214,7 +214,7 @@ type updateCreditCardDetailsRequest struct {
 	Cvv         int32  `json:"cvv" binding:"required"`
 	Pin         int32  `json:"pin" binding:"required"`
 	ExpiaryDate string `json:"expiary_date" binding:"required"` // Changed to string for easier handling
-	UserID      int32  `json:"user_id" binding:"required"`
+	UserID      string `json:"user_id" binding:"required"`
 }
 
 func (server *Server) updateCreditCardDetails(ctx *gin.Context) {
@@ -251,7 +251,7 @@ func (server *Server) updateCreditCardDetails(ctx *gin.Context) {
 type updateCreditCardPinRequest struct {
 	CardNumber string `json:"card_number" binding:"required"`
 	Pin        int32  `json:"pin" binding:"required"`
-	UserID     int32  `json:"user_id" binding:"required"`
+	UserID     string `json:"user_id" binding:"required"`
 }
 
 func (server *Server) updateCreditCardPin(ctx *gin.Context) {

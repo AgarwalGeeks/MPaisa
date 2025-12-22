@@ -35,7 +35,7 @@ type AddCreditCardParams struct {
 	Pin         int32          `json:"pin"`
 	ExpiaryDate time.Time      `json:"expiary_date"`
 	Usage       sql.NullString `json:"usage"`
-	UserID      int32          `json:"user_id"`
+	UserID      string         `json:"user_id"`
 }
 
 func (q *Queries) AddCreditCard(ctx context.Context, arg AddCreditCardParams) (FinanceCreditCard, error) {
@@ -69,7 +69,7 @@ DELETE FROM "Finance"."Credit_Card"
 WHERE user_id = $1
 `
 
-func (q *Queries) DeleteAllCreditCards(ctx context.Context, userID int32) error {
+func (q *Queries) DeleteAllCreditCards(ctx context.Context, userID string) error {
 	_, err := q.db.ExecContext(ctx, deleteAllCreditCards, userID)
 	return err
 }
@@ -80,7 +80,7 @@ WHERE card_number = $2 AND user_id = $1
 `
 
 type DeleteCreditCardParams struct {
-	UserID     int32  `json:"user_id"`
+	UserID     string `json:"user_id"`
 	CardNumber string `json:"card_number"`
 }
 
@@ -94,7 +94,7 @@ SELECT id, bank_name, card_name, card_number, cvv, pin, expiary_date, usage, use
 WHERE user_id = $1 ORDER BY bank_name, card_name
 `
 
-func (q *Queries) GetAllCreditCards(ctx context.Context, userID int32) ([]FinanceCreditCard, error) {
+func (q *Queries) GetAllCreditCards(ctx context.Context, userID string) ([]FinanceCreditCard, error) {
 	rows, err := q.db.QueryContext(ctx, getAllCreditCards, userID)
 	if err != nil {
 		return nil, err
@@ -133,7 +133,7 @@ WHERE card_number = $2 AND user_id = $1
 `
 
 type GetCreditCardByCardNumberParams struct {
-	UserID     int32  `json:"user_id"`
+	UserID     string `json:"user_id"`
 	CardNumber string `json:"card_number"`
 }
 
@@ -160,7 +160,7 @@ WHERE usage LIKE $2 AND user_id = $1
 `
 
 type GetCreditCardByUsageParams struct {
-	UserID int32          `json:"user_id"`
+	UserID string         `json:"user_id"`
 	Usage  sql.NullString `json:"usage"`
 }
 
@@ -188,7 +188,7 @@ WHERE card_name = $2 AND user_id = $1
 `
 
 type UpdateCreditCardDetailsParams struct {
-	UserID      int32     `json:"user_id"`
+	UserID      string    `json:"user_id"`
 	CardName    string    `json:"card_name"`
 	CardNumber  string    `json:"card_number"`
 	Cvv         int32     `json:"cvv"`
@@ -215,7 +215,7 @@ WHERE user_id = $1 AND card_number = $2
 `
 
 type UpdateCreditCardPinParams struct {
-	UserID     int32  `json:"user_id"`
+	UserID     string `json:"user_id"`
 	CardNumber string `json:"card_number"`
 	Pin        int32  `json:"pin"`
 }
@@ -232,7 +232,7 @@ WHERE card_number = $2 AND user_id = $1
 `
 
 type UpdateCreditCardUsageParams struct {
-	UserID     int32          `json:"user_id"`
+	UserID     string         `json:"user_id"`
 	CardNumber string         `json:"card_number"`
 	Usage      sql.NullString `json:"usage"`
 }

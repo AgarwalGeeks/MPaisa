@@ -70,7 +70,7 @@ WHERE ss.user_id = $1
 ORDER BY ss.month DESC, ssi.category_name
 `
 
-func (q *Queries) GetAllSalarySplitItemsByUserId(ctx context.Context, userID int32) ([]FinanceSalarySplitItems, error) {
+func (q *Queries) GetAllSalarySplitItemsByUserId(ctx context.Context, userID string) ([]FinanceSalarySplitItems, error) {
 	rows, err := q.db.QueryContext(ctx, getAllSalarySplitItemsByUserId, userID)
 	if err != nil {
 		return nil, err

@@ -25,7 +25,7 @@ RETURNING id, user_id, month, total_salary, notes, is_fully_transferred, created
 `
 
 type AddSalarySplitParams struct {
-	UserID             int32          `json:"user_id"`
+	UserID             string         `json:"user_id"`
 	TotalSalary        string         `json:"total_salary"`
 	Month              time.Time      `json:"month"`
 	Notes              sql.NullString `json:"notes"`
@@ -91,7 +91,7 @@ WHERE user_id = $1
 ORDER BY month DESC
 `
 
-func (q *Queries) GetSalarySplitsByUserId(ctx context.Context, userID int32) ([]FinanceSalarySplits, error) {
+func (q *Queries) GetSalarySplitsByUserId(ctx context.Context, userID string) ([]FinanceSalarySplits, error) {
 	rows, err := q.db.QueryContext(ctx, getSalarySplitsByUserId, userID)
 	if err != nil {
 		return nil, err

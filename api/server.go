@@ -25,6 +25,11 @@ func NewServer(store *db.Store) *Server {
 	router.POST("/credit_card/usage", server.updateCreditCardUsage)
 	router.POST("/credit_card/pin", server.updateCreditCardPin)
 
+	router.POST("/users", server.addUser)
+	router.GET("/users/:id", server.getUserById)
+	router.GET("/users/email", server.getUserByEmail)
+	router.DELETE("/users", server.deleteUserByEmail)
+
 	server.router = router
 	return server
 }

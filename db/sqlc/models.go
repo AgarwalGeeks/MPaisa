@@ -18,7 +18,7 @@ type FinanceCreditCard struct {
 	Pin         int32          `json:"pin"`
 	ExpiaryDate time.Time      `json:"expiary_date"`
 	Usage       sql.NullString `json:"usage"`
-	UserID      int32          `json:"user_id"`
+	UserID      string         `json:"user_id"`
 }
 
 type FinanceSalarySplitItems struct {
@@ -34,11 +34,20 @@ type FinanceSalarySplitItems struct {
 
 type FinanceSalarySplits struct {
 	ID                 int32          `json:"id"`
-	UserID             int32          `json:"user_id"`
+	UserID             string         `json:"user_id"`
 	Month              time.Time      `json:"month"`
 	TotalSalary        string         `json:"total_salary"`
 	Notes              sql.NullString `json:"notes"`
 	IsFullyTransferred sql.NullBool   `json:"is_fully_transferred"`
 	CreatedAt          sql.NullTime   `json:"created_at"`
 	UpdatedAt          sql.NullTime   `json:"updated_at"`
+}
+
+type FinanceUsers struct {
+	ID           string       `json:"id"`
+	Email        string       `json:"email"`
+	Username     string       `json:"username"`
+	UserPassword string       `json:"user_password"`
+	CreatedAt    sql.NullTime `json:"created_at"`
+	UpdatedAt    sql.NullTime `json:"updated_at"`
 }
