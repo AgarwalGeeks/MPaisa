@@ -9,7 +9,7 @@ CREATE TABLE "Finance"."Credit_Card" (
     "pin" INTEGER NOT NULL,
     "expiary_date" DATE NOT NULL,
     "usage" VARCHAR(100),
-    "user_id" INTEGER NOT NULL
+    "user_id" CHAR(16) NOT NULL
 );
 
 CREATE SEQUENCE "Finance"."salary_splits_id_seq"
@@ -17,7 +17,7 @@ CREATE SEQUENCE "Finance"."salary_splits_id_seq"
 
 CREATE TABLE "Finance"."Salary_splits" (
     "id" INTEGER DEFAULT nextval('"Finance".salary_splits_id_seq') NOT NULL,
-    "user_id" INTEGER NOT NULL,
+    "user_id" CHAR(16) NOT NULL,
     "month" DATE NOT NULL,
     "total_salary" NUMERIC(12,0) NOT NULL,
     "notes" TEXT,
