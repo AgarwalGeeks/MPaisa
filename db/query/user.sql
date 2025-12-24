@@ -16,6 +16,10 @@ WHERE id = $1;
 SELECT * FROM "Finance"."users"
 WHERE email = $1;
 
+-- name: GetUserByUsername :one
+SELECT * FROM "Finance"."users"
+WHERE username = $1;
+
 -- name: DeleteUserByEmail :exec
 DELETE FROM "Finance"."users"
 WHERE email = $1;

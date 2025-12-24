@@ -2,12 +2,15 @@ package api
 
 import (
 	db "github.com/AgarwalGeeks/MPaisa/db/sqlc"
+	"github.com/AgarwalGeeks/MPaisa/tokens"
+	"github.com/AgarwalGeeks/MPaisa/util"
 	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
-	store  *db.Store
-	router *gin.Engine
+	store      *db.Store
+	router     *gin.Engine
+	tokenMaker tokens.Maker
 }
 
 func NewServer(store *db.Store) *Server {
@@ -30,7 +33,15 @@ func NewServer(store *db.Store) *Server {
 	router.GET("/users/email", server.getUserByEmail)
 	router.DELETE("/users", server.deleteUserByEmail)
 
+	router.POST("/users/login", server.loginUser)
+
 	server.router = router
+
+	tokenKey, err := util.RandomString(32)
+	if err != nil {
+		panic(err)
+	}
+	server.tokenMaker = tokens.NewPasetoMaker(tokenKey) // Example symmetric key
 	return server
 }
 

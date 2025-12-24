@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"time"
 
 	db "github.com/AgarwalGeeks/MPaisa/db/sqlc"
 	"github.com/AgarwalGeeks/MPaisa/util"
@@ -39,10 +40,7 @@ func (server *Server) addUser(ctx *gin.Context) {
 		return
 	}
 
-	response := gin.H{
-		"id":         user.ID,
-		"created_at": user.CreatedAt,
-	}
+	response := userResponse(user)
 
 	ctx.JSON(http.StatusOK, response)
 }
@@ -64,7 +62,9 @@ func (server *Server) getUserById(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, user)
+	response := userResponse(user)
+
+	ctx.JSON(http.StatusOK, response)
 }
 
 type getUserByEmailRequest struct {
@@ -84,7 +84,9 @@ func (server *Server) getUserByEmail(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, user)
+	response := userResponse(user)
+
+	ctx.JSON(http.StatusOK, response)
 }
 
 type deleteUserByEmailRequest struct {
@@ -105,4 +107,53 @@ func (server *Server) deleteUserByEmail(ctx *gin.Context) {
 	}
 
 	ctx.JSON(200, gin.H{"message": "user deleted successfully"})
+}
+
+type loginUserRequest struct {
+	UserPassword string `json:"user_password" binding:"required,min=6"`
+	Username     string `json:"username" binding:"required,alphanum,lowercase"`
+}
+
+func (server *Server) loginUser(ctx *gin.Context) {
+	var req loginUserRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	user, err := server.store.GetUserByUsername(ctx, req.Username)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
+		return
+	}
+
+	passwordErr := util.CheckPassword(req.UserPassword, user.UserPassword)
+	if passwordErr != nil {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(passwordErr))
+		return
+	}
+
+	token, err := server.tokenMaker.CreateToken(req.Username, "", time.Minute*15)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	response := gin.H{
+		"access_token": token,
+		"user":         userResponse(user),
+		"message":      "login successful",
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}
+
+func userResponse(user db.FinanceUsers) gin.H {
+	return gin.H{
+		"id":         user.ID,
+		"email":      user.Email,
+		"username":   user.Username,
+		"created_at": user.CreatedAt,
+		"updated_at": user.UpdatedAt,
+	}
 }
