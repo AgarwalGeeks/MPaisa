@@ -10,10 +10,10 @@ INSERT INTO "Finance"."Salary_splits" (
 ) 
 RETURNING *;
 
--- name: GetSalarySplitsByUserId :many
+-- name: GetLatestSalarySplitByUserId :one
 SELECT * FROM "Finance"."Salary_splits"
 WHERE user_id = $1
-ORDER BY month DESC;
+ORDER BY month DESC LIMIT 1;
 
 -- name: GetSalarySplitById :one
 SELECT * FROM "Finance"."Salary_splits"

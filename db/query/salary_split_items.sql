@@ -12,7 +12,8 @@ RETURNING *;
 
 -- name: GetSalarySplitItemsBySplitId :many
 SELECT * FROM "Finance"."Salary_split_items"
-WHERE split_id = $1;    
+WHERE split_id = $1
+ORDER BY amount DESC;    
 
 -- name: MarkSalarySplitItemAsTransferredById :exec
 UPDATE "Finance"."Salary_split_items"
@@ -22,12 +23,6 @@ WHERE id = $1;
 -- name: DeleteSalarySplitItemsBySplitId :exec
 DELETE FROM "Finance"."Salary_split_items"
 WHERE split_id = $1;
-
--- name: GetAllSalarySplitItemsByUserId :many
-SELECT ssi.* FROM "Finance"."Salary_split_items" ssi
-JOIN "Finance"."Salary_splits" ss ON ssi.split_id = ss.id
-WHERE ss.user_id = $1
-ORDER BY ss.month DESC, ssi.category_name;
 
 -- name: UpdateSalarySplitItemAmountById :exec
 UPDATE "Finance"."Salary_split_items"

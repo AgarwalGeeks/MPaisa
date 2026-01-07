@@ -64,6 +64,28 @@ func (q *Queries) DeleteSalarySplitById(ctx context.Context, id int32) error {
 	return err
 }
 
+const getLatestSalarySplitByUserId = `-- name: GetLatestSalarySplitByUserId :one
+SELECT id, user_id, month, total_salary, notes, is_fully_transferred, created_at, updated_at FROM "Finance"."Salary_splits"
+WHERE user_id = $1
+ORDER BY month DESC LIMIT 1
+`
+
+func (q *Queries) GetLatestSalarySplitByUserId(ctx context.Context, userID string) (FinanceSalarySplits, error) {
+	row := q.db.QueryRowContext(ctx, getLatestSalarySplitByUserId, userID)
+	var i FinanceSalarySplits
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Month,
+		&i.TotalSalary,
+		&i.Notes,
+		&i.IsFullyTransferred,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getSalarySplitById = `-- name: GetSalarySplitById :one
 SELECT id, user_id, month, total_salary, notes, is_fully_transferred, created_at, updated_at FROM "Finance"."Salary_splits"
 WHERE id = $1
@@ -83,44 +105,6 @@ func (q *Queries) GetSalarySplitById(ctx context.Context, id int32) (FinanceSala
 		&i.UpdatedAt,
 	)
 	return i, err
-}
-
-const getSalarySplitsByUserId = `-- name: GetSalarySplitsByUserId :many
-SELECT id, user_id, month, total_salary, notes, is_fully_transferred, created_at, updated_at FROM "Finance"."Salary_splits"
-WHERE user_id = $1
-ORDER BY month DESC
-`
-
-func (q *Queries) GetSalarySplitsByUserId(ctx context.Context, userID string) ([]FinanceSalarySplits, error) {
-	rows, err := q.db.QueryContext(ctx, getSalarySplitsByUserId, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []FinanceSalarySplits
-	for rows.Next() {
-		var i FinanceSalarySplits
-		if err := rows.Scan(
-			&i.ID,
-			&i.UserID,
-			&i.Month,
-			&i.TotalSalary,
-			&i.Notes,
-			&i.IsFullyTransferred,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const markSalarySplitAsFullyTransferredById = `-- name: MarkSalarySplitAsFullyTransferredById :exec

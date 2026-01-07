@@ -28,6 +28,8 @@ func NewServer(store *db.Store) *Server {
 	authRoutes := router.Group("/").Use(middleware.AuthMiddleware(server.tokenMaker))
 	server.addUserRequestsToRouter(authRoutes.(*gin.RouterGroup))
 	server.addCreditCardRequestsToRouter(authRoutes.(*gin.RouterGroup))
+	server.addSalarySplitRequestsToRouter(authRoutes.(*gin.RouterGroup))
+	server.addSalarySplitItemRequestsToRouter(authRoutes.(*gin.RouterGroup))
 
 	server.router = router
 
@@ -53,6 +55,23 @@ func (server *Server) addUserRequestsToRouter(authRoutes *gin.RouterGroup) {
 	authRoutes.GET("/users/:id", server.getUserById)
 	authRoutes.GET("/users/email", server.getUserByEmail)
 	authRoutes.DELETE("/users", server.deleteUserByEmail)
+}
+
+func (server *Server) addSalarySplitRequestsToRouter(authRoutes *gin.RouterGroup) {
+	authRoutes.POST("/salary_splits", server.addSalarySplit)
+	authRoutes.GET("/salary_splits/:id", server.getSalarySplitById)
+	authRoutes.DELETE("/salary_splits/:id", server.deleteSalarySplit)
+	authRoutes.GET("/salary_splits/latest/:user_id", server.getLatestSalarySplitByUserId)
+	authRoutes.POST("/salary_splits/mark_transferred/:id", server.markSalarySplitAsFullyTransferredById)
+	authRoutes.PUT("/salary_splits/update_total", server.updateSalarySplitTotalById)
+}
+
+func (server *Server) addSalarySplitItemRequestsToRouter(authRoutes *gin.RouterGroup) {
+	authRoutes.POST("/salary_split_items", server.addSalarySplitItem)
+	authRoutes.GET("/salary_split_items/:id", server.getSalarySplitItemById)
+	authRoutes.DELETE("/salary_split_items/:id", server.deleteSalarySplitItem)
+	authRoutes.POST("/salary_split_items/mark_transferred/:id", server.markSalarySplitItemAsTransferredById)
+	authRoutes.PUT("/salary_split_items/update_amount", server.updateSalarySplitItemAmountById)
 }
 
 func (server *Server) setTokenMaker() {

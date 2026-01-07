@@ -63,48 +63,10 @@ func (q *Queries) DeleteSalarySplitItemsBySplitId(ctx context.Context, splitID i
 	return err
 }
 
-const getAllSalarySplitItemsByUserId = `-- name: GetAllSalarySplitItemsByUserId :many
-SELECT ssi.id, ssi.split_id, ssi.category_name, ssi.amount, ssi.move_to, ssi.is_transferred, ssi.created_at, ssi.updated_at FROM "Finance"."Salary_split_items" ssi
-JOIN "Finance"."Salary_splits" ss ON ssi.split_id = ss.id
-WHERE ss.user_id = $1
-ORDER BY ss.month DESC, ssi.category_name
-`
-
-func (q *Queries) GetAllSalarySplitItemsByUserId(ctx context.Context, userID string) ([]FinanceSalarySplitItems, error) {
-	rows, err := q.db.QueryContext(ctx, getAllSalarySplitItemsByUserId, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []FinanceSalarySplitItems
-	for rows.Next() {
-		var i FinanceSalarySplitItems
-		if err := rows.Scan(
-			&i.ID,
-			&i.SplitID,
-			&i.CategoryName,
-			&i.Amount,
-			&i.MoveTo,
-			&i.IsTransferred,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getSalarySplitItemsBySplitId = `-- name: GetSalarySplitItemsBySplitId :many
 SELECT id, split_id, category_name, amount, move_to, is_transferred, created_at, updated_at FROM "Finance"."Salary_split_items"
 WHERE split_id = $1
+ORDER BY amount DESC
 `
 
 func (q *Queries) GetSalarySplitItemsBySplitId(ctx context.Context, splitID int32) ([]FinanceSalarySplitItems, error) {
