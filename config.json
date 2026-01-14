@@ -1,5 +1,6 @@
 {
   "db_driver": "postgres",
   "db_source": "postgresql://haagarwa:Harshit@12345@postgres_server:5432/MPaisa?sslmode=disable",
-  "server_address": "0.0.0.0:8091"
+  "server_address": "0.0.0.0:8091",
+  "migration_url": "file://db/migration"
 }

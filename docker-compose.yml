@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  postgres_server:
+    image: postgres:latest
+    container_name: postgres_server
+    ports:
+      - "5435:5432" # Map host port 5435 to container port 5432
+    environment:
+      POSTGRES_USER: haagarwa
+      POSTGRES_PASSWORD: Harshit@12345
+      POSTGRES_DB: MPaisa
+
+  mpaisa:
+    build:
+      context: . # Build the image from the current directory
+    container_name: mpaisa
+    ports:
+      - "8091:8091" # Map host port 8091 to container port 8091
+    depends_on:
+      - postgres_server # Ensure postgres_server starts first
+    environment:
+      DB_DRIVER: postgres
+      DB_SOURCE: postgresql://haagarwa:Harshit@12345@postgres_server:5432/MPaisa?sslmode=disable
