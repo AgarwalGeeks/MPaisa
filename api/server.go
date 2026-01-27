@@ -1,11 +1,16 @@
 package api
 
 import (
+	"context"
+	"log"
+	"net/http"
+	"time"
+
 	db "github.com/AgarwalGeeks/MPaisa/db/sqlc"
 	"github.com/AgarwalGeeks/MPaisa/middleware"
 	"github.com/AgarwalGeeks/MPaisa/tokens"
-	"github.com/AgarwalGeeks/MPaisa/util"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 )
 
 type Server struct {
@@ -21,6 +26,8 @@ func NewServer(store *db.Store) *Server {
 
 	server.setTokenMaker()
 	router := gin.Default()
+
+	server.addPlatformRoutes(router)
 
 	router.POST("/users", server.addUser)
 	router.POST("/users/login", server.loginUser)
@@ -74,11 +81,35 @@ func (server *Server) addSalarySplitItemRequestsToRouter(authRoutes *gin.RouterG
 	authRoutes.PUT("/salary_split_items/update_amount", server.updateSalarySplitItemAmountById)
 }
 
-func (server *Server) setTokenMaker() {
-	tokenKey, err := util.RandomString(32)
-	if err != nil {
-		panic(err)
+// addPlatformRoutes registers platform / infrastructure focused endpoints.
+func (server *Server) addPlatformRoutes(router *gin.Engine) {
+	router.GET("/healthz", server.healthCheck)
+	router.GET("/readyz", server.readinessCheck)
+}
+
+func (server *Server) healthCheck(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+func (server *Server) readinessCheck(ctx *gin.Context) {
+	requestCtx, cancel := context.WithTimeout(ctx.Request.Context(), 2*time.Second)
+	defer cancel()
+
+	if err := server.store.Ping(requestCtx); err != nil {
+		log.Printf("readiness check failed: %v", err)
+		ctx.JSON(http.StatusServiceUnavailable, gin.H{"status": "unhealthy"})
+		return
 	}
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "ready"})
+}
+
+func (server *Server) setTokenMaker() {
+	tokenKey := viper.GetString("PASETO_SYMMETRIC_KEY")
+	if len(tokenKey) < 32 {
+		log.Fatal("PASETO_SYMMETRIC_KEY must be set and at least 32 characters long")
+	}
+
 	server.tokenMaker = tokens.NewPasetoMaker(tokenKey)
 }
 

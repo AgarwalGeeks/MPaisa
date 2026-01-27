@@ -20,6 +20,11 @@ func NewStore(db *sql.DB) *Store {
 	}
 }
 
+// Ping verifies that the database is reachable.
+func (store *Store) Ping(ctx context.Context) error {
+	return store.db.PingContext(ctx)
+}
+
 // execTx executes a function within a database transaction
 func (store *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
 	tx, transactionError := store.db.BeginTx(ctx, nil)
