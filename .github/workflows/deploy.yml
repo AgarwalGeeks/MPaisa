@@ -68,8 +68,8 @@ jobs:
             aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
             
             # Stop and remove old container
-            docker stop mpaisa-app || true
-            docker rm mpaisa-app || true
+            docker stop mpaisa || true
+            docker rm mpaisa || true
             
             # Pull latest image
             docker pull ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
@@ -89,7 +89,7 @@ jobs:
             
             # Run new container with environment variables
             docker run -d \
-              --name mpaisa-app \
+              --name mpaisa \
               -p 8091:8091 \
               --env-file /tmp/prod.env \
               ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
@@ -98,14 +98,14 @@ jobs:
             sleep 5
             
             # Verify container is running
-            docker ps | grep mpaisa-app
+            docker ps | grep mpaisa
             
             # Health check
             echo "Running health check..."
             HEALTH_STATUS=$(curl -f http://localhost:8091/healthz || echo "FAILED")
             if [ "$HEALTH_STATUS" = "FAILED" ]; then
               echo "Health check failed!"
-              docker logs mpaisa-app
+              docker logs mpaisa
               exit 1
             fi
             echo "Health check passed: $HEALTH_STATUS"
