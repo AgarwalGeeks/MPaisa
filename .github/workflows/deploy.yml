@@ -1,4 +1,4 @@
-name: Deploy to production
+name: Deploy to Production
 
 on:
   push:
@@ -6,15 +6,14 @@ on:
 
 jobs:
   deploy:
-    name: Build image
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out code
-        uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -22,97 +21,76 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push image to Amazon ECR
+      - name: Build and push Docker image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: mpaisa
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: latest
         run: |
-          docker build -t mpaisa:${IMAGE_TAG} -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
-          docker push -a $ECR_REGISTRY/$ECR_REPOSITORY
+          docker build -t $ECR_REPOSITORY .
+          docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Debug network connectivity
+      - name: Deploy on EC2
         env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-        run: |
-          echo "GitHub Actions Runner IP:"
-          curl -s https://api.ipify.org
-          echo ""
-          echo "Testing connectivity to EC2..."
-          nc -vz ${EC2_HOST} 22 || echo "Port 22 not reachable"
-          nc -vz ${EC2_HOST} 8091 || echo "Port 8091 not reachable"
-          echo "DNS resolution:"
-          nslookup ${EC2_HOST} || true
-
-      - name: Deploy to EC2
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: mpaisa
-          IMAGE_TAG: ${{ github.sha }}
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
           AWS_REGION: ap-south-1
-          DB_SECRET_NAME: ${{ secrets.DB_SECRET_NAME }}
-          AUTH_SECRET_NAME: ${{ secrets.AUTH_SECRET_NAME }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: mpaisa
         run: |
-          # Save SSH key
-          echo "$EC2_SSH_KEY" > ec2_key.pem
-          chmod 600 ec2_key.pem
-          
-          # Deploy to EC2
-          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ${EC2_USER}@${EC2_HOST} bash -s << EOF
-            # Login to ECR
-            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-            
-            # Stop and remove old container
+          echo "$EC2_SSH_KEY" > ec2.pem
+          chmod 600 ec2.pem
+
+          ssh -o StrictHostKeyChecking=no -i ec2.pem ${EC2_USER}@${EC2_HOST} << 'EOF'
+            set -e
+
+            echo "Logging into ECR"
+            aws ecr get-login-password --region ap-south-1 \
+              | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+
+            echo "Pulling latest image"
+            docker pull ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
+
+            echo "Stopping old container"
             docker stop mpaisa || true
             docker rm mpaisa || true
-            
-            # Pull latest image
-            docker pull ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
-            
-            # Fetch DB secrets from AWS Secrets Manager
-            aws secretsmanager get-secret-value --secret-id ${DB_SECRET_NAME} --region ${AWS_REGION} --query SecretString --output text > /tmp/db_secrets.json
-            
-            # Fetch Auth secrets from AWS Secrets Manager
-            aws secretsmanager get-secret-value --secret-id ${AUTH_SECRET_NAME} --region ${AWS_REGION} --query SecretString --output text > /tmp/auth_secrets.json
-            
-            # Create prod.env file by concatenating both secrets
-            echo "# Database Configuration" > /tmp/prod.env
-            jq -r 'to_entries | .[] | "\(.key)=\(.value)"' /tmp/db_secrets.json >> /tmp/prod.env
-            echo "" >> /tmp/prod.env
-            echo "# Authentication Configuration" >> /tmp/prod.env
-            jq -r 'to_entries | .[] | "\(.key)=\(.value)"' /tmp/auth_secrets.json >> /tmp/prod.env
-            
-            # Run new container with environment variables
+
+            echo "Fetching secrets"
+            aws secretsmanager get-secret-value \
+              --secret-id mpaisa/prod/db \
+              --region ap-south-1 \
+              --query SecretString \
+              --output text | jq -r . > /tmp/db.json
+
+            aws secretsmanager get-secret-value \
+              --secret-id mpaisa/prod/auth \
+              --region ap-south-1 \
+              --query SecretString \
+              --output text | jq -r . > /tmp/auth.json
+
+            echo "Creating env file"
+            rm -f /tmp/prod.env
+            jq -r 'to_entries | .[] | "\(.key)=\(.value)"' /tmp/db.json >> /tmp/prod.env
+            jq -r 'to_entries | .[] | "\(.key)=\(.value)"' /tmp/auth.json >> /tmp/prod.env
+
+            echo "Starting new container"
             docker run -d \
               --name mpaisa \
-              -p 8091:8091 \
               --env-file /tmp/prod.env \
-              ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
-            
-            # Wait for container to start
-            sleep 5
-            
-            # Verify container is running
-            docker ps | grep mpaisa
-            
-            # Health check
-            echo "Running health check..."
-            HEALTH_STATUS=\$(curl -f http://localhost:8091/healthz || echo "FAILED")
-            if [ "\$HEALTH_STATUS" = "FAILED" ]; then
-              echo "Health check failed!"
-              docker logs mpaisa
-              exit 1
-            fi
-            echo "Health check passed: \$HEALTH_STATUS"
-            
-            # Cleanup
-            rm -f /tmp/db_secrets.json /tmp/auth_secrets.json /tmp/prod.env
+              -p 8091:8091 \
+              ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
+
+            echo "Waiting for app to boot"
+            sleep 8
+
+            echo "Health check"
+            curl -f http://localhost:8091/healthz
+
+            echo "Deployment successful"
           EOF
-          
-          # Cleanup SSH key
-          rm -f ec2_key.pem
+
+          rm -f ec2.pem
