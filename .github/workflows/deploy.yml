@@ -63,7 +63,14 @@ jobs:
           chmod 600 ec2_key.pem
           
           # Deploy to EC2
-          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ${EC2_USER}@${EC2_HOST} bash -s << EOF
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ${EC2_USER}@${EC2_HOST} \
+            "AWS_REGION=${AWS_REGION} \
+             ECR_REGISTRY=${ECR_REGISTRY} \
+             ECR_REPOSITORY=${ECR_REPOSITORY} \
+             IMAGE_TAG=${IMAGE_TAG} \
+             DB_SECRET_NAME=${DB_SECRET_NAME} \
+             AUTH_SECRET_NAME=${AUTH_SECRET_NAME} \
+             bash -s" << 'ENDSSH'
             # Login to ECR
             aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
             
@@ -102,17 +109,17 @@ jobs:
             
             # Health check
             echo "Running health check..."
-            HEALTH_STATUS=\$(curl -f http://localhost:8091/healthz || echo "FAILED")
-            if [ "\$HEALTH_STATUS" = "FAILED" ]; then
+            HEALTH_STATUS=$(curl -f http://localhost:8091/healthz || echo "FAILED")
+            if [ "$HEALTH_STATUS" = "FAILED" ]; then
               echo "Health check failed!"
               docker logs mpaisa
               exit 1
             fi
-            echo "Health check passed: \$HEALTH_STATUS"
+            echo "Health check passed: $HEALTH_STATUS"
             
             # Cleanup
             rm -f /tmp/db_secrets.json /tmp/auth_secrets.json /tmp/prod.env
-          EOF
+ENDSSH
           
           # Cleanup SSH key
           rm -f ec2_key.pem
