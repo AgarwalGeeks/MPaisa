@@ -33,6 +33,19 @@ jobs:
           docker build -t mpaisa:${IMAGE_TAG} -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
           docker push -a $ECR_REGISTRY/$ECR_REPOSITORY
 
+      - name: Debug network connectivity
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          echo "GitHub Actions Runner IP:"
+          curl -s https://api.ipify.org
+          echo ""
+          echo "Testing connectivity to EC2..."
+          nc -vz ${EC2_HOST} 22 || echo "Port 22 not reachable"
+          nc -vz ${EC2_HOST} 8091 || echo "Port 8091 not reachable"
+          echo "DNS resolution:"
+          nslookup ${EC2_HOST} || true
+
       - name: Deploy to EC2
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
