@@ -58,9 +58,12 @@ jobs:
           DB_SECRET_NAME: ${{ secrets.DB_SECRET_NAME }}
           AUTH_SECRET_NAME: ${{ secrets.AUTH_SECRET_NAME }}
         run: |
-          # Save SSH key
-          echo "$EC2_SSH_KEY" > ec2_key.pem
+          # Save SSH key with proper formatting
+          echo "$EC2_SSH_KEY" | tr -d '\r' > ec2_key.pem
           chmod 600 ec2_key.pem
+          
+          # Verify key format
+          head -n 1 ec2_key.pem
           
           # Deploy to EC2
           ssh -o StrictHostKeyChecking=no -i ec2_key.pem ${EC2_USER}@${EC2_HOST} << 'EOF'
