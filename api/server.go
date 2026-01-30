@@ -2,8 +2,10 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	db "github.com/AgarwalGeeks/MPaisa/db/sqlc"
@@ -29,7 +31,7 @@ func NewServer(store *db.Store) *Server {
 
 	server.addPlatformRoutes(router)
 
-	router.POST("/users", server.addUser)
+	router.POST("/users/signup", server.addUser)
 	router.POST("/users/login", server.loginUser)
 
 	authRoutes := router.Group("/").Use(middleware.AuthMiddleware(server.tokenMaker))
@@ -105,9 +107,18 @@ func (server *Server) readinessCheck(ctx *gin.Context) {
 }
 
 func (server *Server) setTokenMaker() {
-	tokenKey := viper.GetString("PASETO_SYMMETRIC_KEY")
-	if len(tokenKey) < 32 {
-		log.Fatal("PASETO_SYMMETRIC_KEY must be set and at least 32 characters long")
+	tokenKeyBase64 := viper.GetString("PASETO_SYMMETRIC_KEY")
+	// Trim whitespace and newlines from the key (common issue with AWS Secrets Manager)
+	tokenKeyBase64 = strings.TrimSpace(tokenKeyBase64)
+
+	// Decode base64 key to get the actual 32 bytes
+	tokenKey, err := base64.StdEncoding.DecodeString(tokenKeyBase64)
+	if err != nil {
+		log.Fatalf("Failed to decode PASETO_SYMMETRIC_KEY from base64: %v", err)
+	}
+
+	if len(tokenKey) != 32 {
+		log.Fatalf("PASETO_SYMMETRIC_KEY must decode to exactly 32 bytes, got %d bytes", len(tokenKey))
 	}
 
 	server.tokenMaker = tokens.NewPasetoMaker(tokenKey)

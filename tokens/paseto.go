@@ -7,12 +7,12 @@ import (
 )
 
 type PasetoMaker struct {
-	symmetricKey string
+	symmetricKey []byte
 	paseto       *paseto.V2
 }
 
 // NewPasetoMaker creates a new PasetoMaker instance.
-func NewPasetoMaker(symmetricKey string) *PasetoMaker {
+func NewPasetoMaker(symmetricKey []byte) *PasetoMaker {
 	return &PasetoMaker{
 		symmetricKey: symmetricKey,
 		paseto:       paseto.NewV2(),
@@ -26,7 +26,7 @@ func (maker *PasetoMaker) CreateToken(username string, role string, duration tim
 		return "", err
 	}
 
-	token, err := maker.paseto.Encrypt([]byte(maker.symmetricKey), payload, nil)
+	token, err := maker.paseto.Encrypt(maker.symmetricKey, payload, nil)
 	if err != nil {
 		return "", err
 	}
@@ -36,7 +36,7 @@ func (maker *PasetoMaker) CreateToken(username string, role string, duration tim
 // VerifyToken checks if the PASETO token is valid and returns the payload.
 func (maker *PasetoMaker) VerifyToken(token string) (*Payload, error) {
 	var payload Payload
-	err := maker.paseto.Decrypt(token, []byte(maker.symmetricKey), &payload, nil)
+	err := maker.paseto.Decrypt(token, maker.symmetricKey, &payload, nil)
 	if err != nil {
 		return nil, ErrInvalidToken
 	}
