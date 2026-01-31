@@ -31,8 +31,8 @@ func NewServer(store *db.Store) *Server {
 
 	server.addPlatformRoutes(router)
 
-	router.POST("/users/signup", server.addUser)
-	router.POST("/users/login", server.loginUser)
+	router.POST("/user/signup", server.addUser)
+	router.POST("/user/login", server.loginUser)
 
 	authRoutes := router.Group("/").Use(middleware.AuthMiddleware(server.tokenMaker))
 	server.addUserRequestsToRouter(authRoutes.(*gin.RouterGroup))
@@ -61,9 +61,9 @@ func (server *Server) addCreditCardRequestsToRouter(authRoutes *gin.RouterGroup)
 }
 
 func (server *Server) addUserRequestsToRouter(authRoutes *gin.RouterGroup) {
-	authRoutes.GET("/users/:id", server.getUserById)
-	authRoutes.GET("/users/email", server.getUserByEmail)
-	authRoutes.DELETE("/users", server.deleteUserByEmail)
+	authRoutes.GET("/user/:id", server.getUserById)
+	authRoutes.GET("/user/email", server.getUserByEmail)
+	authRoutes.DELETE("/user", server.deleteUserByEmail)
 }
 
 func (server *Server) addSalarySplitRequestsToRouter(authRoutes *gin.RouterGroup) {
